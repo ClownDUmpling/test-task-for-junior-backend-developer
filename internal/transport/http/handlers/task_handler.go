@@ -20,6 +20,20 @@ func NewTaskHandler(usecase taskusecase.Usecase) *TaskHandler {
 	return &TaskHandler{usecase: usecase}
 }
 
+func recurrenceFromDTO(dto *recurrenceDTO) *taskdomain.Recurrence {
+	if dto == nil {
+		return nil
+	}
+
+	return &taskdomain.Recurrence{
+		Type:       dto.Type,
+		EveryNDays: dto.EveryNDays,
+		MonthDays:  dto.MonthDays,
+		Dates:      dto.Dates,
+		Parity:     dto.Parity,
+	}
+}
+
 func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req taskMutationDTO
 	if err := decodeJSON(r, &req); err != nil {
@@ -31,6 +45,7 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Title:       req.Title,
 		Description: req.Description,
 		Status:      req.Status,
+		Recurrence:  recurrenceFromDTO(req.Recurrence),
 	})
 	if err != nil {
 		writeUsecaseError(w, err)
@@ -73,6 +88,7 @@ func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Title:       req.Title,
 		Description: req.Description,
 		Status:      req.Status,
+		Recurrence:  recurrenceFromDTO(req.Recurrence),
 	})
 	if err != nil {
 		writeUsecaseError(w, err)

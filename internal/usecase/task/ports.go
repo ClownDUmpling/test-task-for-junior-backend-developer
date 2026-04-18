@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"time"
 
 	taskdomain "example.com/taskservice/internal/domain/task"
 )
@@ -12,6 +13,7 @@ type Repository interface {
 	Update(ctx context.Context, task *taskdomain.Task) (*taskdomain.Task, error)
 	Delete(ctx context.Context, id int64) error
 	List(ctx context.Context) ([]taskdomain.Task, error)
+	ExistsForParentAndDate(ctx context.Context, parentID int64, date time.Time) (bool, error)
 }
 
 type Usecase interface {
@@ -26,10 +28,12 @@ type CreateInput struct {
 	Title       string
 	Description string
 	Status      taskdomain.Status
+	Recurrence  *taskdomain.Recurrence
 }
 
 type UpdateInput struct {
 	Title       string
 	Description string
 	Status      taskdomain.Status
+	Recurrence  *taskdomain.Recurrence
 }

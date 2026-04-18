@@ -153,6 +153,41 @@
       }
     },
     "schemas": {
+      "Recurrence": {
+        "type": "onject",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["daily", "monthly", "specific_dates", "even_odd"],
+            "example": "daily"
+          },
+          "every_n_days": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1,
+            "description": "Для типа daily - каждые N дней"
+          },
+          "month_days": {
+            "type": "array",
+            "items": {"type": "integer","minimum": 1, "maximum": 30},
+            "example": [1,15],
+            "description": "Для типа monthly - числа месяца"
+          },
+          "dates": {
+            "type": "string",
+            "items": {"type": "string", "format":"date-time"},
+            "example": ["2026-05-01T00:00:00Z"],
+            "description": "Для типа specific_dates - конкретные даты"
+          },
+          "parity": {
+            "type":"string",
+            "enum":["even", "odd"],
+            "example": "even",
+            "description": "Для типа even_odd - четные или нечетные дни"
+          }
+        }
+      },
       "CreateTaskRequest": {
         "type": "object",
         "required": ["title"],
@@ -169,6 +204,9 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "new"
+          },
+          "recurrence": {
+            "$ref":"#/components/schemas/Recurrence"
           }
         }
       },
@@ -188,6 +226,9 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "in_progress"
+          },
+          "recurrence": {
+            "$ref":"#/components/schemas/Recurrence"
           }
         }
       },
@@ -204,6 +245,21 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "new"
+          },
+          "recurrence": {
+            "$ref":"#/components/schemas/Recurrence"
+          },
+          "parent_id": {
+            "type":"integer",
+            "format": "int64",
+            "example": 1,
+            "description": "ID шаблона из которого создан экземпляр"
+          },
+          "scheduled_date": {
+            "type":"string",
+            "format":"date-time",
+            "example":"2026-03-18T00:00:00Z",
+            "description": "Дата на которую создан экземпляр задачи"
           },
           "created_at": {
             "type": "string",

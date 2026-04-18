@@ -27,14 +27,19 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Ta
 		return nil, err
 	}
 
+	now := s.now()
 	model := &taskdomain.Task{
 		Title:       normalized.Title,
 		Description: normalized.Description,
 		Status:      normalized.Status,
+		Recurrence:  normalized.Recurrence,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
-	now := s.now()
-	model.CreatedAt = now
-	model.UpdatedAt = now
+
+	if model.Recurrence != nil {
+		model.Recurrence.BaseDate = now
+	}
 
 	created, err := s.repo.Create(ctx, model)
 	if err != nil {
@@ -67,6 +72,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 		Title:       normalized.Title,
 		Description: normalized.Description,
 		Status:      normalized.Status,
+		Recurrence:  normalized.Recurrence,
 		UpdatedAt:   s.now(),
 	}
 
@@ -106,7 +112,41 @@ func validateCreateInput(input CreateInput) (CreateInput, error) {
 		return CreateInput{}, fmt.Errorf("%w: invalid status", ErrInvalidInput)
 	}
 
+	if input.Recurrence != nil {
+		if err := validateRecurrence(input.Recurrence); err != nil {
+			return CreateInput{}, err
+		}
+	}
 	return input, nil
+}
+
+func validateRecurrence(r *taskdomain.Recurrence) error {
+	switch r.Type {
+	case taskdomain.RecurrenceDaily:
+		if r.EveryNDays == nil || *r.EveryNDays <= 0 {
+			return fmt.Errorf("%w: every_n_days must be positive", ErrInvalidInput)
+		}
+	case taskdomain.RecurrenceMonthly:
+		if len(r.MonthDays) == 0 {
+			return fmt.Errorf("%w: month_days is required", ErrInvalidInput)
+		}
+		for _, d := range r.MonthDays {
+			if d < 1 || d > 30 {
+				return fmt.Errorf("%w: month_days must be between 1 and 30", ErrInvalidInput)
+			}
+		}
+	case taskdomain.RecurrenceSpecifiedDates:
+		if len(r.Dates) == 0 {
+			return fmt.Errorf("%w: dates is required", ErrInvalidInput)
+		}
+	case taskdomain.RecurrenceEvenOdd:
+		if r.Parity == nil || (*r.Parity != "even" && *r.Parity != "odd") {
+			return fmt.Errorf("%w: parity must be even or odd", ErrInvalidInput)
+		}
+	default:
+		return fmt.Errorf("%w: invalid recurrence type", ErrInvalidInput)
+	}
+	return nil
 }
 
 func validateUpdateInput(input UpdateInput) (UpdateInput, error) {
@@ -119,6 +159,12 @@ func validateUpdateInput(input UpdateInput) (UpdateInput, error) {
 
 	if !input.Status.Valid() {
 		return UpdateInput{}, fmt.Errorf("%w: invalid status", ErrInvalidInput)
+	}
+
+	if input.Recurrence != nil {
+		if err := validateRecurrence(input.Recurrence); err != nil {
+			return UpdateInput{}, err
+		}
 	}
 
 	return input, nil
